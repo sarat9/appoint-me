@@ -8,7 +8,8 @@ import axios from 'axios'
 function BookForm() {
 
 
-    const [payload, setPayload] = React.useState({})
+  const [payload, setPayload] = React.useState({})
+  const [validation, setValidation] = React.useState({})
 
     const handleChange= (event)=>{
         
@@ -35,12 +36,41 @@ function BookForm() {
         }
         console.log(payload)
     }
-
+    const validatePayload = () => {
+      let valid =true;
+      let validation = {}
+        if(!payload.name){
+          valid = false
+          validation.name="Please enter the name"
+        }
+        if(!payload.email){
+          valid = false
+          validation.email="Please enter the email"
+        }
+        if(!payload.mobile){
+          valid = false
+          validation.mobile="Please enter the mobile number"
+        }
+        if(!payload.message||payload.message.length<10){
+          valid = false
+          validation.message="Please enter more than 10 characters"
+        }
+        if(!payload.image){
+          valid = false
+          validation.image="Please upload an image"
+        }
+        setValidation({...validation})
+        return valid
+    }
     const handleSubmit = (event)=>{
         event.preventDefault()
+        if(!validatePayload()){return}
         axios.post(process.env.REACT_APP_API_HOST+':'+process.env.REACT_APP_API_PORT+'/api/appointment', {...payload})
           .then(function (response) {
             console.log(response);
+            setPayload({})
+            setValidation({})
+            alert('Form Submitted')
           })
           .catch(function (error) {
             console.log(error);
@@ -48,36 +78,51 @@ function BookForm() {
     }
 
   return (
-    <div className="Book-form" style={{width:'50%'}}>
+    <div className="Book-form" style={{width:'40%'}}>
         
       <div className="detailed-form" 
-       style={{background:'white', color: 'black', padding: '10%', width:'100%'}} >
+       style={{background:'white', color: 'black', padding: '15%', width:'100%'}} >
 
         
         <FormControl fullWidth>
-            <TextField id="outlined-basic" name="name" fullWidth label="Name" variant="outlined" onChange={handleChange}/>
-            <FormHelperText id="my-helper-text">Fill in your sweet name.</FormHelperText>
+            <TextField 
+              error={validation.name}
+              id="outlined-basic" name="name" 
+              fullWidth label="Name" variant="outlined" 
+              helperText={validation.name}
+              onChange={handleChange}/>
+           <FormHelperText id="my-helper-text">Fill in your sweet name.</FormHelperText>
         </FormControl>
         <br/>
         <FormControl fullWidth>
-            <TextField id="outlined-basic" fullWidth name="email" label="Email" variant="outlined" onChange={handleChange}/>
+            <TextField id="outlined-basic" error={validation.email} 
+              fullWidth name="email" label="Email" variant="outlined" 
+              helperText={validation.email} 
+              onChange={handleChange}/>
             <FormHelperText id="my-helper-text">We'll never share your email.</FormHelperText>
         </FormControl>
         <br/>
         <FormControl fullWidth>
-            <TextField id="outlined-basic" fullWidth name="mobile" label="Mobile" variant="outlined" onChange={handleChange}/>
-            <FormHelperText id="my-helper-text">We are just a call away!.</FormHelperText>
+            <TextField id="outlined-basic" error={validation.mobile} 
+            helperText={validation.mobile} 
+            fullWidth name="mobile" label="Mobile" variant="outlined" onChange={handleChange}/>
+            <FormHelperText id="my-helper-text">We are just a call away!</FormHelperText>
         </FormControl>
         <br/>
         <FormControl fullWidth>
-            <TextField id="outlined-basic" fullWidth name="message" label="Message" variant="outlined" onChange={handleChange}/>
+            <TextField id="outlined-basic" error={validation.message} 
+            helperText={validation.message}
+            fullWidth name="message" label="Message" variant="outlined" onChange={handleChange}/>
             <FormHelperText id="my-helper-text">How can I help you ?.</FormHelperText>
         </FormControl>
         <br/>
         <br/>
         <FormControl fullWidth>
             <p style={{fontSize:'16px'}}>Make a payment and upload a screenshot of the transaction!</p>
-            <TextField type="file" name="image" onChange={handleChange} />
+            <TextField type="file" name="image" 
+            error={validation.image} 
+            helperText={validation.image}
+             onChange={handleChange} />
         </FormControl>
     
         <br/><br/>
