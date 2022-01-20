@@ -2,12 +2,16 @@ const express = require('express')
 const router = express.Router();
 const { Appointment } = require('../../model/appointment/Appointment')
 
-router.get('/appointment',async (req,res)=>{
+
+
+router.post('/appointment/data',async (req,res)=>{
+    let tab = req.body;
     let appointments;
-    let whereClause = {fulfilled: false }
+    let whereClause = {...tab}
     appointments = await Appointment.find(whereClause).sort({createdAt: -1})
     res.status(200).send(appointments)
 })
+
 
 router.post('/appointment', async (req, res) => {
     try {  
@@ -20,11 +24,11 @@ router.post('/appointment', async (req, res) => {
     }
 })
 
-router.put('/appointment/fullfill/:id', async (req, res) => {
+router.put('/appointment/update/:id', async (req, res) => {
     try {  
         let id = req.params.id
         const filter = { _id: id };
-        const update = { fulfilled: true };
+        const update = {...req.body}
 
         const newAppointment = await Appointment.findOneAndUpdate(filter, update);
         res.status(200).send(newAppointment)

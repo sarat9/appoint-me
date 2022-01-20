@@ -1,38 +1,58 @@
 import * as React from 'react';
 import {useEffect} from 'react';
-import TextField from '@mui/material/TextField';
-import FormControl, { useFormControl } from '@mui/material/FormControl';
-import FormHelperText from '@mui/material/FormHelperText';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
 import axios from 'axios'
+import PageLoading from '../components/Loading/PageLoading';
 
 function BookedRequests() {
 
 
   const [bookings, setBookings] = React.useState([])
-  const [payload, setPayload] = React.useState({})
   const [expanded, setExpanded] = React.useState(false);
-
-
-    useEffect(()=>{
-      getBookingsData().then(response=>{
-        if(response&&response.data){
-          setBookings([...response.data])
-        }
-      })
-    }, [])
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [currentTab, setCurrentTab] = React.useState('default');
+  const nextTab = {
+    'default' : 'fulfilled',
+    'fulfilled': 'scheduled',
+    'scheduled': 'done'
+  }
+    const handleChangeTab = (event, newValue) => {
+      event.preventDefault()
+      setCurrentTab(newValue); 
+    };
 
     const handleChange = (panel) => (event, isExpanded) => {
       setExpanded(isExpanded ? panel : false);
     };
 
-    const getBookingsData = ()=>{
-      return axios.get(process.env.REACT_APP_API_HOST+':'+process.env.REACT_APP_API_PORT+'/api/appointment')
+    const constructPayload = React.useCallback((currentTab) => {
+      let payload = {}
+      if(currentTab=='default'){
+        payload = { fulfilled:false, scheduled: false, done: false }
+      }
+      else if(currentTab=='fulfilled'){
+        payload = { fulfilled:true, scheduled: false, done: false }
+      }
+      else if(currentTab=='scheduled'){
+        payload = { fulfilled:true, scheduled: true, done: false }
+      }
+      else if(currentTab=='done'){
+        payload = { fulfilled:true, scheduled: false, done: true }
+      }
+      return payload
+    }, [currentTab]);
+
+    const getBookingsData = (payload)=>{
+      return axios.post(process.env.REACT_APP_API_HOST+':'+process.env.REACT_APP_API_PORT+'/api/appointment/data', payload)
         .then(function (response) {
           console.log(response);
           return response
@@ -42,20 +62,49 @@ function BookedRequests() {
         });
     }
 
-    const fullfillBooking = (id)=>{
-      return axios.put(process.env.REACT_APP_API_HOST+':'+process.env.REACT_APP_API_PORT+'/api/appointment/fullfill/'+id)
+    const updateBooking = (id)=>{
+      let payload = constructPayload(nextTab[currentTab])
+      setIsLoading(true)
+      return axios.put(process.env.REACT_APP_API_HOST+':'+process.env.REACT_APP_API_PORT+'/api/appointment/update/'+id, payload)
         .then(function (response) {
           console.log(response);
+          setBookings([...(bookings.filter(booking=>booking._id!=id))])
+          setExpanded(false)
+          setIsLoading(false)
           return response
         })
         .catch(function (error) {
           console.log(error);
         });
     }
+  
+
+    useEffect(()=>{
+      let payload = constructPayload(currentTab)
+      setIsLoading(true)
+      getBookingsData(payload).then(response=>{
+        if(response&&response.data){
+          setBookings([...response.data])
+          setIsLoading(false)
+          setExpanded(false)
+        }
+      })
+    }, [currentTab])
+
+    
 
   return (
     <div className="booked-requests" style={{width:'80%'}}>
-        
+      <TabContext value={currentTab}>
+        <Box sx={{ fontSize:'32px', background:'white', borderBottom: 1, borderColor: 'divider' }}>
+          <TabList onChange={handleChangeTab} aria-label="lab API tabs example">
+            <Tab label="New Bookings" value="default" />
+            <Tab label="Verified" value="fulfilled" />
+            <Tab label="Scheduled" value="scheduled" />
+            <Tab label="Done" value="done" />
+          </TabList>
+        </Box>
+      </TabContext>
       <div className="detailed-form" 
        style={{background:'white', color: 'black', padding: '10%'}} >
 
@@ -87,7 +136,11 @@ function BookedRequests() {
                 heigth="600px"
               />
              </div>}
-             <Button fullWidth variant="contained" onClick={()=>fullfillBooking(booking._id)}>Submit</Button>
+            {(currentTab&&currentTab!='done')&&<>
+              <Button fullWidth variant="contained" onClick={()=>updateBooking(booking._id)}>
+                {currentTab=='default'?'Verify Payment':currentTab=='fulfilled'?'Scheduled Meeting':'Done'}
+              </Button>
+            </>}
            </AccordionDetails>
          </Accordion>
          })}
@@ -97,7 +150,7 @@ function BookedRequests() {
         <br/><br/>
         
 
-
+        {isLoading&&<PageLoading />}
       </div>
     </div>
   );

@@ -19,6 +19,8 @@ const appointmentSchema = new mongoose.Schema({
     mobile: { type: String, default: '', required: true },
     image: { type: String, default: '' },
     fulfilled: { type: Boolean, default: false },
+    scheduled: { type: Boolean, default: false },
+    done: { type: Boolean, default: false },
 }, {
         timestamps: true
     })
